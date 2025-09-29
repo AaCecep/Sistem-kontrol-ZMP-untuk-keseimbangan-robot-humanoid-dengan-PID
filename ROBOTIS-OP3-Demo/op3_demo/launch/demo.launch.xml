@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- robotis op3 manager -->
+  <include file="$(find-pkg-share op3_manager)/launch/op3_manager.launch.py"/>
+
+  <!-- Camera and Ball detector -->
+  <include file="$(find-pkg-share op3_advanced_detector)/launch/ball_detector_from_usb_cam.launch.py"/> 
+
+  <!-- camera setting tool -->
+  <include file="$(find-pkg-share op3_camera_setting_tool)/launch/op3_camera_setting_tool.launch.xml" />
+    
+  <!-- web setting -->
+  <include file="$(find-pkg-share op3_web_setting_tool)/launch/web_setting_server.launch.xml" />
+
+  <!-- game_controller -->
+  <!-- <include file="$(find-pkg-share game_controller)/launch/game_controller.py"/> -->
+  
+  <!-- robotis op3 demo -->
+  <node pkg="op3_demo" exec="op_demo_node" output="screen">
+    <param name="grass_demo" value="False" />
+    <param name="p_gain" value="0.45" />
+    <param name="d_gain" value="0.045" />
+  </node>
+</launch>

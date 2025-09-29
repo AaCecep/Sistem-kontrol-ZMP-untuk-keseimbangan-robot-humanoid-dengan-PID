@@ -1,0 +1,14 @@
+description: Ultralytics best_n model trained on data.yaml
+author: Ultralytics
+license: AGPL-3.0 https://ultralytics.com/license
+date: '2024-10-31T14:55:56.721672'
+version: 8.1.18
+stride: 32
+task: detect
+batch: 1
+imgsz:
+- 640
+- 640
+names:
+  0: bola
+  1: gawang
