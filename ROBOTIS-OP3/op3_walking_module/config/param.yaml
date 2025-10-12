@@ -4,7 +4,7 @@ z_offset: 0.0350000001
 roll_offset: 0
 pitch_offset: 0
 yaw_offset: 0
-hip_pitch_offset: 4.9999998545464601
+hip_pitch_offset: 1.9999998545464601
 period_time: 600
 dsp_ratio: 0.200000003
 step_forward_back_ratio: 0.280000001

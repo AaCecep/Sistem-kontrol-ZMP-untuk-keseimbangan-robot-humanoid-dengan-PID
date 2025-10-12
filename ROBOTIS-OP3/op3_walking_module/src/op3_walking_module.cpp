@@ -211,7 +211,7 @@ void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
   if (enable_ == false)
     return;
 
-  // Ambil parameter PID dari walking_param
+  
   Kp_zmp_x_ = walking_param_.balance_p_gain;
   Ki_zmp_x_ = walking_param_.balance_i_gain;
   Kd_zmp_x_ = walking_param_.balance_d_gain;
@@ -219,14 +219,16 @@ void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
   static rclcpp::Time prev_time = rclcpp::Clock().now();
   static double last_error = 0.0;
   static double integral_term = 0.0;
+  static double lowpass_x = 0.0; 
 
   rclcpp::Time curr_time = rclcpp::Clock().now();
   double dt = (curr_time - prev_time).seconds();
-  if (dt <= 0.0) dt = 1e-3; // hindari divide by zero
+  if (dt <= 0.0) dt = 0.008; 
   prev_time = curr_time;
 
-  double zmp_x_int = std::round(msg->zmp_x * 10.0) / 10.0;
-  double zmp_x_setpoint = 3.0;  // Target ZMP
+  double zmp_x_int = msg->zmp_x;
+
+  double zmp_x_setpoint = 2;  
   double zmp_x_error = zmp_x_setpoint - zmp_x_int;
 
   // P
@@ -234,12 +236,7 @@ void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
 
   // I
   integral_term += Ki_zmp_x_ * zmp_x_error * dt;   
-  double integral_limit = 0.5; 
-  if (integral_term > integral_limit) {
-      integral_term = integral_limit;
-  } else if (integral_term < -integral_limit) {
-      integral_term = -integral_limit;
-  }
+  integral_term = std::clamp(integral_term, -0.5, 0.5);
 
   // D
   double derivative_term = Kd_zmp_x_ * (zmp_x_error - last_error) / dt;
@@ -248,13 +245,14 @@ void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
   double pid_output = proportional_term + integral_term + derivative_term;
   double scale_factor = 0.01; 
   double offset_correction = pid_output * scale_factor;
+  double alpha = 0.4; 
+  lowpass_x = alpha * offset_correction + (1.0 - alpha) * lowpass_x;
   
-  walking_param_.init_x_offset -= offset_correction;
-
-  if (walking_param_.init_x_offset > 0.04) {
-    walking_param_.init_x_offset = 0.04;
-  } else if (walking_param_.init_x_offset < -0.065) {
-    walking_param_.init_x_offset = -0.065;
+  walking_param_.init_x_offset = (-lowpass_x) - 0.018;
+  if (walking_param_.init_x_offset > 0.02) {
+    walking_param_.init_x_offset = 0.02;
+  } else if (walking_param_.init_x_offset < -0.06) {
+    walking_param_.init_x_offset = -0.06;
   }
 
   last_error = zmp_x_error;

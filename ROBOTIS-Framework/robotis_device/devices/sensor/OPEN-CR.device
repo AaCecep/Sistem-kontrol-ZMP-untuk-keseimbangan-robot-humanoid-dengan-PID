@@ -26,5 +26,5 @@ device_type = sensor
    46  | pitch                    | 2      | R      | RAM    | 0             | 4096        | N
    48  | yaw                      | 2      | R      | RAM    | 0             | 4096        | N
    50  | imu_control              | 1      | RW     | RAM    | 0             | 255         | N
-   
+
    

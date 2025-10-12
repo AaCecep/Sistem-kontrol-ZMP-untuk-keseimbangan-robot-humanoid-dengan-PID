@@ -9,7 +9,7 @@ from my_msg.msg import Data   # custom message
 class DynamicComCalculator(Node):
     def __init__(self):
         super().__init__('zmp_node')
-        self.publisher_ = self.create_publisher(Data, "zmp", 10)
+        self.publisher_ = self.create_publisher(Data, "zmp", 1)
         self.get_logger().info("ZMP node started.")
 
         # Data sensor
@@ -184,10 +184,18 @@ class DynamicComCalculator(Node):
             joint_states = [self.joint_positions]
             support_polygon_data = self.calculate_support_polygon(joint_states, imu_accel_z)
 
+        # ===== Low-pass Filter =====
+        self.prev_zmp_x = 0.0
+        self.prev_zmp_y = 0.0
+        self.alpha = 0.8 
+        ZMP_x_filtered = self.alpha * ZMP_x + (1 - self.alpha) * self.prev_zmp_x
+        ZMP_y_filtered = self.alpha * ZMP_y + (1 - self.alpha) * self.prev_zmp_y
+        self.prev_zmp_x = ZMP_x_filtered
+        self.prev_zmp_y = ZMP_y_filtered
         # Publish custom message
         msg = Data()
-        msg.zmp_x = ZMP_x
-        msg.zmp_y = ZMP_y
+        msg.zmp_x = ZMP_x_filtered
+        msg.zmp_y = ZMP_y_filtered
         msg.com_x = CoM_x
         msg.com_y = CoM_y
         msg.com_z = CoM_z

@@ -34,7 +34,7 @@ BallFollower::BallFollower()
     NOT_FOUND_THRESHOLD(50),
     MAX_FB_STEP(40.0 * 0.001),
     MAX_RL_TURN(15.0 * M_PI / 180),
-    IN_PLACE_FB_STEP(-3.0 * 0.001),
+    IN_PLACE_FB_STEP(-1.0 * 0.008),
     MIN_FB_STEP(5.0 * 0.001),
     MIN_RL_TURN(5.0 * M_PI / 180),
     UNIT_FB_STEP(1.0 * 0.001),
@@ -86,11 +86,6 @@ void BallFollower::setNode(rclcpp::Node::SharedPtr node)
 void BallFollower::yawCallback(const std_msgs::msg::Float32::SharedPtr msg)
 {
   current_yaw_ = msg->data;
-
-  if (DEBUG_PRINT)
-  {
-    RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "Received Yaw: %f", current_yaw_);
-  }
 }
 
 
@@ -240,62 +235,79 @@ bool BallFollower::processFollowing(double x_angle, double y_angle, double ball_
   cam_msg.angle_x = ball_x_angle;
   cam_msg.angle_y= ball_y_angle;
   camera_pub_->publish(cam_msg);
+  // RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "yaw : %f", current_yaw_);
+  if ((distance_to_ball < distance_to_kick) && (fabs(ball_x_angle) > 25.0)){
+    setWalkingParam(-0.01, 0, 0);
+  }
 
   // check whether ball is correct position.
   if ((distance_to_ball < distance_to_kick) && (fabs(ball_x_angle) < 25.0))
   {
-    count_to_kick_ += 1;
-
-    if (DEBUG_PRINT)
-    {
-      RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "head pan : %f | ball pan : %f", (current_pan_ * 180 / M_PI), (x_angle * 180 / M_PI));
-      RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "head tilt : %f | ball tilt : %f", (current_tilt_ * 180 / M_PI), (y_angle * 180 / M_PI));
-      RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "foot to kick : %f", ball_x_angle);
-    }
-
-    RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "In range [%d | %f]", count_to_kick_, ball_x_angle);
-
-    // ball queue
-//    if(ball_position_queue_.size() >= 5)
-//      ball_position_queue_.erase(ball_position_queue_.begin());
-
-//    ball_position_queue_.push_back((ball_x_angle > 0) ? 1 : -1);
-
-
-    if (count_to_kick_ > 20)
-    {
-      setWalkingCommand("stop");
-      on_tracking_ = false;
-
-      // check direction of the ball
-//      accum_ball_position_ = std::accumulate(ball_position_queue_.begin(), ball_position_queue_.end(), 0);
-
-//      if (accum_ball_position_ > 0)
-      if (ball_x_angle > 0)
-      {
-        if (DEBUG_PRINT)
-          RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "Ready to kick : left");  // left
-        approach_ball_position_ = OnLeft;
+    if(!(current_yaw_ < 5 || current_yaw_ > 355)){
+      if(current_yaw_ < 180){
+        // mutar kanan
+        setWalkingParam(-0.003, -0.015, 4.8 * M_PI / 180.0);
+        RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "mutar kanan");
+      } else{
+        // mutar kiri
+        setWalkingParam(-0.003, 0.019, -4.8 * M_PI / 180.0);
+        RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "mutar kiri");
       }
-      else
+    }else{
+      count_to_kick_ += 1;
+      setWalkingParam(0, 0, 0);
+
+      if (DEBUG_PRINT)
       {
-        if (DEBUG_PRINT)
-          RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "Ready to kick : right");  // right
-        approach_ball_position_ = OnRight;
+        RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "head pan : %f | ball pan : %f", (current_pan_ * 180 / M_PI), (x_angle * 180 / M_PI));
+        RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "head tilt : %f | ball tilt : %f", (current_tilt_ * 180 / M_PI), (y_angle * 180 / M_PI));
+        RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "foot to kick : %f", ball_x_angle);
       }
 
-      return true;
-    }
-    else if (count_to_kick_ > 15)
-    {
-      //      if (ball_x_angle > 0)
-      //        accum_ball_position_ += 1;
-      //      else
-      //        accum_ball_position_ -= 1;
+      RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "In range [%d | %f]", count_to_kick_, ball_x_angle);
 
-      // send message
-      setWalkingParam(IN_PLACE_FB_STEP, 0, 0);
-      return false;
+      // ball queue
+  //    if(ball_position_queue_.size() >= 5)
+  //      ball_position_queue_.erase(ball_position_queue_.begin());
+
+  //    ball_position_queue_.push_back((ball_x_angle > 0) ? 1 : -1);
+
+
+      if (count_to_kick_ > 20)
+      {
+        setWalkingCommand("stop");
+        on_tracking_ = false;
+
+        // check direction of the ball
+  //      accum_ball_position_ = std::accumulate(ball_position_queue_.begin(), ball_position_queue_.end(), 0);
+
+  //      if (accum_ball_position_ > 0)
+        if (ball_x_angle > 0)
+        {
+          if (DEBUG_PRINT)
+            RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "Ready to kick : left");  // left
+          approach_ball_position_ = OnLeft;
+        }
+        else
+        {
+          if (DEBUG_PRINT)
+            RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "Ready to kick : right");  // right
+          approach_ball_position_ = OnRight;
+        }
+
+        return true;
+      }
+      else if (count_to_kick_ > 15)
+      {
+        //      if (ball_x_angle > 0)
+        //        accum_ball_position_ += 1;
+        //      else
+        //        accum_ball_position_ -= 1;
+
+        // send message
+        setWalkingParam(IN_PLACE_FB_STEP, 0, 0);
+        return false;
+      }
     }
   }
   else
@@ -310,7 +322,9 @@ bool BallFollower::processFollowing(double x_angle, double y_angle, double ball_
   calcFootstep(distance_to_walk, current_pan_, delta_time, fb_move, rl_angle);
 
   // send message
-  setWalkingParam(fb_move, 0, rl_angle);
+  if (!(distance_to_ball < distance_to_kick) && (fabs(ball_x_angle) < 25.0)){
+    setWalkingParam(fb_move, 0, rl_angle);
+  }
 
   // for debug
   //RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "distance to ball : %6.4f, fb : %6.4f, delta : %6.6f", distance_to_ball, fb_move, delta_time);

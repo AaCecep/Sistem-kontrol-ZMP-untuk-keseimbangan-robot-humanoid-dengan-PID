@@ -142,24 +142,24 @@ void SoccerDemo::process()
   if(enable_ == false)
     return;
 
-  if (last_game_state_ == 3) 
-  {
-    ball_follower_.startFollowing();
-    on_following_ball_ = true;
-    a = 1;
-  }
-  else
-  {
-    on_following_ball_ = false;
-    if(a == 1){
-      ball_follower_.stopFollowing();
-    }
-  }
+  // if (last_game_state_ == 3) 
+  // {
+  //   ball_follower_.startFollowing();
+  //   on_following_ball_ = true;
+  //   a = 1;
+  // }
+  // else
+  // {
+  //   on_following_ball_ = false;
+  //   if(a == 1){
+  //     ball_follower_.stopFollowing();
+  //   }
+  // }
     // check to start
   if (start_following_ == true)
   {
     ball_tracker_.startTracking();
-    // ball_follower_.startFollowing();
+    ball_follower_.startFollowing();
     start_following_ = false;
 
     wait_count_ = 1 * SPIN_RATE;
@@ -575,7 +575,7 @@ void SoccerDemo::startSoccerMode()
   setBodyModuleToDemo("walking_module");
 
   RCLCPP_INFO(rclcpp::get_logger("SoccerDemo"), "Start Soccer Demo");
-  on_following_ball_ = false;
+  on_following_ball_ = true;
   on_tracking_ball_ = true;
   start_following_ = true;
 

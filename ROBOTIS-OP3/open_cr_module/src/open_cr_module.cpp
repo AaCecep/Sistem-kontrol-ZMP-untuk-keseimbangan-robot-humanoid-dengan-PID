@@ -41,8 +41,6 @@ OpenCRModule::OpenCRModule()
   result_["button_start"] = 0;
   result_["button_user"] = 0;
 
-  //custom
-  result_["yaw"] = 0.0;
 
 
   result_["present_voltage"] = 0.0;
@@ -115,6 +113,8 @@ void OpenCRModule::process(std::map<std::string, robotis_framework::Dynamixel *>
   int16_t acc_y = sensors["open-cr"]->sensor_state_->bulk_read_table_["acc_y"];
   int16_t acc_z = sensors["open-cr"]->sensor_state_->bulk_read_table_["acc_z"];
 
+  int16_t yawbaru = sensors["open-cr"]->sensor_state_->bulk_read_table_["yaw"];
+
   uint16_t present_volt = sensors["open-cr"]->sensor_state_->bulk_read_table_["present_voltage"];
 
   result_["gyro_x"] = lowPassFilter(0.4, -getGyroValue(gyro_x), previous_result_["gyro_x"]);
@@ -130,17 +130,10 @@ void OpenCRModule::process(std::map<std::string, robotis_framework::Dynamixel *>
   result_["acc_y"] = lowPassFilter(0.4, -getAccValue(acc_y), previous_result_["acc_y"]);
   result_["acc_z"] = lowPassFilter(0.4, getAccValue(acc_z), previous_result_["acc_z"]);
 
+
   RCLCPP_INFO_EXPRESSION(this->get_logger(), DEBUG_PRINT, " ======================= Acc ======================== ");
   RCLCPP_INFO_EXPRESSION(this->get_logger(), DEBUG_PRINT, "Raw : %d, %d, %d", acc_x, acc_y, acc_z);
   RCLCPP_INFO_EXPRESSION(this->get_logger(), DEBUG_PRINT, "Filtered : %f, %f, %f", result_["acc_x"], result_["acc_y"], result_["acc_z"]);
-  
-  int16_t orient_yaw   = sensors["open-cr"]->sensor_state_->bulk_read_table_["yaw"];
-  int16_t orient_pitch = sensors["open-cr"]->sensor_state_->bulk_read_table_["pitch"];
-  int16_t orient_roll  = sensors["open-cr"]->sensor_state_->bulk_read_table_["roll"];
-
-  result_["yaw"]   = lowPassFilter(0.4, orient_yaw/10, previous_result_["yaw"]);
-  result_["pitch"] = lowPassFilter(0.4, orient_pitch/10, previous_result_["pitch"]);
-  result_["roll"]  = lowPassFilter(0.4, orient_roll/10, previous_result_["roll"]);
 
 
   rclcpp::Time update_time(sensors["open-cr"]->sensor_state_->update_time_stamp_.sec_, sensors["open-cr"]->sensor_state_->update_time_stamp_.nsec_);
@@ -165,6 +158,11 @@ void OpenCRModule::process(std::map<std::string, robotis_framework::Dynamixel *>
   previous_result_["gyro_x_prev"] = result_["gyro_x"];
   previous_result_["gyro_y_prev"] = result_["gyro_y"];
   previous_result_["gyro_z_prev"] = result_["gyro_z"];
+
+    // //rpy orientation
+  std_msgs::msg::Float32 yaw_msg;
+  yaw_msg.data = yawbaru; 
+  orientation_pub_->publish(yaw_msg);
 }
 
 // -2000 ~ 2000dps(-32800 ~ 32800), scale factor : 16.4, dps -> rps
@@ -216,11 +214,6 @@ void OpenCRModule::publishIMU()
   imu_msg_.orientation.w = orientation.w();
 
   imu_pub_->publish(imu_msg_);
-  
-  // //rpy orientation
-  std_msgs::msg::Float32 yaw_msg;
-  yaw_msg.data = result_["yaw"]; 
-  orientation_pub_->publish(yaw_msg);
 }
 
 void OpenCRModule::handleButton(const std::string &button_name)
