@@ -19,6 +19,11 @@ class DynamicComCalculator(Node):
         self.joint_positions = None
         self.previous_time = None
 
+        # === ZMP Low-pass Filter ===
+        self.prev_zmp_x = 0.0
+        self.prev_zmp_y = 0.0
+        self.alpha = 0.4
+
         # Subscriptions
         self.create_subscription(Imu, "/robotis/open_cr/imu", self.imu_callback, 10)
         self.create_subscription(JointState, "/robotis/present_joint_states", self.joint_state_callback, 10)
@@ -185,9 +190,9 @@ class DynamicComCalculator(Node):
             support_polygon_data = self.calculate_support_polygon(joint_states, imu_accel_z)
 
         # ===== Low-pass Filter =====
-        self.prev_zmp_x = 0.0
-        self.prev_zmp_y = 0.0
-        self.alpha = 0.8 
+        # self.prev_zmp_x = 0.0
+        # self.prev_zmp_y = 0.0
+        # self.alpha = 0.8 
         ZMP_x_filtered = self.alpha * ZMP_x + (1 - self.alpha) * self.prev_zmp_x
         ZMP_y_filtered = self.alpha * ZMP_y + (1 - self.alpha) * self.prev_zmp_y
         self.prev_zmp_x = ZMP_x_filtered

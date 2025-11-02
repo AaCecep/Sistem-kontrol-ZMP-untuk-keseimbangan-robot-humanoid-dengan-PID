@@ -33,7 +33,7 @@ class OPDemo
     WalkingReady = 9,
     GetUpFront = 122,
     GetUpBack = 123,
-    RightKick = 121,
+    RightKick = 88,
     LeftKick = 120,
     Ceremony = 27,
     ForGrass = 20,

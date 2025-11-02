@@ -44,6 +44,8 @@
 #include "op3_kinematics_dynamics/op3_kinematics_dynamics.h"
 
 #include "my_msg/msg/data.hpp"
+#include "std_msgs/msg/float32.hpp"
+
 
 
 namespace robotis_op
@@ -153,6 +155,7 @@ class WalkingModule : public robotis_framework::MotionModule, public robotis_fra
   /* ROS Topic Publish Functions */
   rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr robot_pose_pub_;
   rclcpp::Publisher<robotis_controller_msgs::msg::StatusMsg>::SharedPtr status_msg_pub_;
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr x_init_;
 
   Eigen::MatrixXd calc_joint_tra_;
 
@@ -230,6 +233,7 @@ class WalkingModule : public robotis_framework::MotionModule, public robotis_fra
   int phase_;
   double body_swing_y;
   double body_swing_z;
+  int kondisi;
 };
 
 }

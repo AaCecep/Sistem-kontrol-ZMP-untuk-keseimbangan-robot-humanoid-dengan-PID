@@ -181,6 +181,7 @@ void WalkingModule::queueThread()
 
   /* publish topics */
   status_msg_pub_ = this->create_publisher<robotis_controller_msgs::msg::StatusMsg>("robotis/status", 1);
+  x_init_ = this->create_publisher<std_msgs::msg::Float32>("/init_x", rclcpp::QoS(10));
 
   /* ROS Service Callback Functions */
   auto get_walking_param_server = this->create_service<op3_walking_module_msgs::srv::GetWalkingParam>(
@@ -208,8 +209,10 @@ void WalkingModule::queueThread()
 // custom zmp
 void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
 {
-  if (enable_ == false)
+  if (enable_ == false){
+    kondisi = 0; 
     return;
+  }
 
   
   Kp_zmp_x_ = walking_param_.balance_p_gain;
@@ -228,8 +231,8 @@ void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
 
   double zmp_x_int = msg->zmp_x;
 
-  double zmp_x_setpoint = 2;  
-  double zmp_x_error = zmp_x_setpoint - zmp_x_int;
+  double zmp_x_setpoint = 3.7;  
+  double zmp_x_error =  zmp_x_int - zmp_x_setpoint;
 
   // P
   double proportional_term = Kp_zmp_x_ * zmp_x_error;
@@ -245,19 +248,16 @@ void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
   double pid_output = proportional_term + integral_term + derivative_term;
   double scale_factor = 0.01; 
   double offset_correction = pid_output * scale_factor;
-  double alpha = 0.4; 
+  double alpha = 0.2; 
   lowpass_x = alpha * offset_correction + (1.0 - alpha) * lowpass_x;
   
-  walking_param_.init_x_offset = (-lowpass_x) - 0.018;
-  if (walking_param_.init_x_offset > 0.02) {
-    walking_param_.init_x_offset = 0.02;
+  walking_param_.init_x_offset = lowpass_x - 0.018;
+  if (walking_param_.init_x_offset > 0.03) {
+    walking_param_.init_x_offset = 0.03;
   } else if (walking_param_.init_x_offset < -0.06) {
     walking_param_.init_x_offset = -0.06;
   }
-
-  last_error = zmp_x_error;
-
-  // Logging
+  
   RCLCPP_INFO(rclcpp::get_logger("WalkingModule"),
               "ZMP-X: %.3f | Error: %.3f | P: %.3f | I: %.3f | D: %.3f | PID Out: %.3f | Corr: %.3f | New X-Offset: %.3f",
               zmp_x_int,
@@ -268,6 +268,25 @@ void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
               pid_output,
               offset_correction,
               walking_param_.init_x_offset);
+  
+  // if (kondisi == 0)
+  // {                                                     
+  //   walking_param_.x_move_amplitude = 0;
+  //   walking_param_.period_time = 0.6;
+  //   return;
+  // }
+  // double error_scale = std::min(fabs(zmp_x_error) / 10.0, 1.0);
+  // if(fabs(zmp_x_error) > 3.5){
+  //   walking_param_.x_move_amplitude = std::clamp(zmp_x_error * 0.01 / 25, -0.04, 0.04);
+  //   walking_param_.period_time = 0.6 - error_scale * (0.15);
+  // }else{
+  //   walking_param_.x_move_amplitude = 0;
+  //   walking_param_.period_time = 0.6;
+  // }
+
+  std_msgs::msg::Float32 offset_msg;
+  offset_msg.data = walking_param_.init_x_offset;
+  x_init_->publish(offset_msg);
 }
 
 
@@ -290,10 +309,14 @@ void WalkingModule::walkingCommandCallback(const std_msgs::msg::String::SharedPt
     return;
   }
 
-  if (msg->data == "start")
+  if (msg->data == "start"){
     startWalking();
-  else if (msg->data == "stop")
+    kondisi = 1;
+  }
+  else if (msg->data == "stop"){
     stop();
+    kondisi = 0;
+  }
   else if (msg->data == "balance on")
     walking_param_.balance_enable = true;
   else if (msg->data == "balance off")

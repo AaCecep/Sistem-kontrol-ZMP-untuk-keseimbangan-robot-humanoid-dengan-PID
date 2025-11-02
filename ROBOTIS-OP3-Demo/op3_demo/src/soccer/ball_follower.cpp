@@ -322,7 +322,7 @@ bool BallFollower::processFollowing(double x_angle, double y_angle, double ball_
   calcFootstep(distance_to_walk, current_pan_, delta_time, fb_move, rl_angle);
 
   // send message
-  if (!(distance_to_ball < distance_to_kick) && (fabs(ball_x_angle) < 25.0)){
+  if (!(distance_to_ball < distance_to_kick) && (fabs(ball_x_angle) > 25.0)){
     setWalkingParam(fb_move, 0, rl_angle);
   }
 
