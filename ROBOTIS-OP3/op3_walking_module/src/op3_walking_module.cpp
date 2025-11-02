@@ -222,7 +222,7 @@ void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
   static rclcpp::Time prev_time = rclcpp::Clock().now();
   static double last_error = 0.0;
   static double integral_term = 0.0;
-  static double lowpass_x = 0.0; 
+  static double x_offset_temp  = 0.0; 
 
   rclcpp::Time curr_time = rclcpp::Clock().now();
   double dt = (curr_time - prev_time).seconds();
@@ -231,7 +231,7 @@ void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
 
   double zmp_x_int = msg->zmp_x;
 
-  double zmp_x_setpoint = 3.7;  
+  double zmp_x_setpoint = 2.5;  
   double zmp_x_error =  zmp_x_int - zmp_x_setpoint;
 
   // P
@@ -248,10 +248,9 @@ void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
   double pid_output = proportional_term + integral_term + derivative_term;
   double scale_factor = 0.01; 
   double offset_correction = pid_output * scale_factor;
-  double alpha = 0.2; 
-  lowpass_x = alpha * offset_correction + (1.0 - alpha) * lowpass_x;
+  x_offset_temp  = 0.3 * tan(offset_correction);
   
-  walking_param_.init_x_offset = lowpass_x - 0.018;
+  walking_param_.init_x_offset = x_offset_temp - 0.018;
   if (walking_param_.init_x_offset > 0.03) {
     walking_param_.init_x_offset = 0.03;
   } else if (walking_param_.init_x_offset < -0.06) {

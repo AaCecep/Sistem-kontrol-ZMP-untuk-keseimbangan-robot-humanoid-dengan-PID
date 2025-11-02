@@ -22,7 +22,7 @@ class DynamicComCalculator(Node):
         # === ZMP Low-pass Filter ===
         self.prev_zmp_x = 0.0
         self.prev_zmp_y = 0.0
-        self.alpha = 0.4
+        self.alpha = 0.2
 
         # Subscriptions
         self.create_subscription(Imu, "/robotis/open_cr/imu", self.imu_callback, 10)
