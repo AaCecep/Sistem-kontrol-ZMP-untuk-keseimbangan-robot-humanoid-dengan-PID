@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # === Baca file CSV ===
-data = pd.read_csv('zmp.csv')   # ubah nama file sesuai nama file kamu
+data = pd.read_csv('cep.csv')   # ubah nama file sesuai nama file kamu
 
 # === Plot grafik ===
 plt.figure(figsize=(10, 5))

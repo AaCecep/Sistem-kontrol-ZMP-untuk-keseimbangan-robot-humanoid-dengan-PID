@@ -1,94 +1,35 @@
-#!/usr/bin/env python3
-import rclpy
-from rclpy.node import Node
-from my_msg.msg import Data
-from std_msgs.msg import Float32
-import time
+import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.signal import find_peaks
+import numpy as np
 
-class ZmpPlotter(Node):
-    def __init__(self):
-        super().__init__('zmp_plotter')
+# === Baca file CSV ===
+data = pd.read_csv("zmp.csv")  # ganti dengan nama file kamu
+time = data["time (s)"]
+zmp_x = data["zmp_x"]
 
-        # --- Subscriptions ---
-        self.create_subscription(Data, 'zmp', self.cb_zmp, 10)
-        self.create_subscription(Float32, '/init_x', self.cb_initx, 10)
+# === Cari puncak (peak) pada sinyal ZMP-X ===
+peaks, _ = find_peaks(zmp_x, prominence=0.05)  # prominence = sensitivitas
+valleys, _ = find_peaks(-zmp_x, prominence=0.05)
 
-        # --- Variabel data ---
-        self.start_time = time.time()
-        self.zmp_x = 0.0
-        self.init_x_offset = 0.0
-        self.time_data = []
-        self.zmp_data = []
-        self.offset_data = []
-        self.last_update_time = 0.0
-        self.update_interval = 0.02  # 50 Hz
+# === Hitung periode osilasi (selisih waktu antar puncak) ===
+if len(peaks) > 1:
+    Pu_list = np.diff(time.iloc[peaks])
+    Pu_mean = np.mean(Pu_list)
+    print(f"Jumlah osilasi terdeteksi: {len(peaks)}")
+    print(f"Pu rata-rata: {Pu_mean:.3f} detik")
+else:
+    print("⚠️ Tidak cukup puncak terdeteksi untuk menghitung Pu")
 
-        # --- Setup Matplotlib ---
-        plt.ion()
-        self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(8, 6))
+# === Plot grafik dan tandai puncak ===
+plt.figure(figsize=(10, 5))
+plt.plot(time, zmp_x, label="ZMP-X", color='blue')
+plt.plot(time.iloc[peaks], zmp_x.iloc[peaks], "ro", label="Puncak (Peak)")
+plt.plot(time.iloc[valleys], zmp_x.iloc[valleys], "go", label="Lembah (Valley)")
 
-        # Grafik ZMP
-        self.line_zmp, = self.ax1.plot([], [], 'b-', label='ZMP X')
-        self.ax1.set_title('ZMP X vs Time')
-        self.ax1.set_xlabel('Time (s)')
-        self.ax1.set_ylabel('ZMP X')
-        self.ax1.grid(True)
-        self.ax1.legend()
-
-        # Grafik Offset
-        self.line_offset, = self.ax2.plot([], [], 'r-', label='Init X Offset')
-        self.ax2.set_title('Init X Offset vs Time')
-        self.ax2.set_xlabel('Time (s)')
-        self.ax2.set_ylabel('Init X Offset')
-        self.ax2.grid(True)
-        self.ax2.legend()
-
-        self.get_logger().info("📈 Plotter aktif — menampilkan grafik dari /zmp dan /init_x")
-
-    # === Callback dari /zmp ===
-    def cb_zmp(self, msg):
-        self.zmp_x = msg.zmp_x
-        self.update_plot_data()
-
-    # === Callback dari /init_x ===
-    def cb_initx(self, msg):
-        self.init_x_offset = msg.data
-        self.update_plot_data()
-
-    # === Update data dan refresh grafik ===
-    def update_plot_data(self):
-        now = time.time()
-        if now - self.last_update_time >= self.update_interval:
-            elapsed = now - self.start_time
-            self.time_data.append(elapsed)
-            self.zmp_data.append(self.zmp_x)
-            self.offset_data.append(self.init_x_offset)
-            self.last_update_time = now
-            self.refresh_plot()
-
-    # === Update tampilan grafik ===
-    def refresh_plot(self):
-        self.line_zmp.set_data(self.time_data, self.zmp_data)
-        self.line_offset.set_data(self.time_data, self.offset_data)
-
-        for ax, ydata in zip([self.ax1, self.ax2], [self.zmp_data, self.offset_data]):
-            ax.relim()
-            ax.autoscale_view()
-
-        plt.pause(0.001)
-
-def main():
-    rclpy.init()
-    node = ZmpPlotter()
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        node.get_logger().info("🛑 Plot dihentikan oleh user.")
-    finally:
-        rclpy.shutdown()
-        plt.ioff()
-        plt.show()
-
-if __name__ == '__main__':
-    main()
+plt.title("Deteksi Osilasi ZMP-X dan Perhitungan Pu")
+plt.xlabel("Waktu (s)")
+plt.ylabel("ZMP-X")
+plt.legend()
+plt.grid(True)
+plt.show()
