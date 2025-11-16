@@ -199,6 +199,8 @@ class DynamicComCalculator(Node):
         self.prev_zmp_y = ZMP_y_filtered
         # Publish custom message
         msg = Data()
+        msg.zmp_x_lama = ZMP_x
+        msg.zmp_y_lama = ZMP_y
         msg.zmp_x = ZMP_x_filtered
         msg.zmp_y = ZMP_y_filtered
         msg.com_x = CoM_x

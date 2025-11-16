@@ -5,3 +5,5 @@ float64 perimeter
 float64 com_x
 float64 com_y
 float64 com_z
+float64 zmp_x_lama
+float64 zmp_y_lama
