@@ -239,10 +239,10 @@ void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
 
   // I
   integral_term += Ki_zmp_x_ * zmp_x_error * dt;   
-  integral_term = std::clamp(integral_term, -0.5, 0.5);
+  integral_term = std::clamp(integral_term, -0.1, 0.1);
 
   // D
-  double derivative_term = Kd_zmp_x_ * (zmp_x_error - last_error) / dt;
+  double derivative_term = Kd_zmp_x_ * (zmp_x_error - last_error) / dt * 0.1;
 
   // Total PID output
   double pid_output = proportional_term + integral_term + derivative_term;

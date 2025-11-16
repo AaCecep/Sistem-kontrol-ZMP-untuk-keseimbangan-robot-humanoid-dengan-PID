@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 try:
     # === Baca file CSV ===
-    data = pd.read_csv('filter.csv')
+    data = pd.read_csv('diamfilter.csv')
 
     # === Plot grafik ===
     plt.figure(figsize=(10, 5))
@@ -12,7 +12,7 @@ try:
     plt.plot(data['time (s)'], data['zmp_x'], 
              label='ZMP-X', linewidth=2)
     
-    # Plot ZMP-X Lama (garis putus-putus)
+    # Plot ZMP-X Lama 
     plt.plot(data['time (s)'], data['zmp_x_lama'], 
              label='ZMP-X Lama', linewidth=2)
 

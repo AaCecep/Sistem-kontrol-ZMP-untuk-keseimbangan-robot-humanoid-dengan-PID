@@ -4,7 +4,7 @@ from scipy.signal import find_peaks
 import numpy as np
 
 # === Baca file CSV ===
-data = pd.read_csv("zmp.csv")  # ganti dengan nama file kamu
+data = pd.read_csv("cep.csv")  # ganti dengan nama file kamu
 time = data["time (s)"]
 zmp_x = data["zmp_x"]
 
