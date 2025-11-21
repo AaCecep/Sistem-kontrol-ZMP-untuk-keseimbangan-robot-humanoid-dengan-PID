@@ -1,0 +1,40 @@
+[1.174s] Invoking command in '/home/robotis/robotis_ws/src/haar': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/robotis/robotis_ws/src/haar/build/haar/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/robotis/robotis_ws/src/haar/install/haar/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base build/haar build --build-base /home/robotis/robotis_ws/src/haar/build/haar/build install --record /home/robotis/robotis_ws/src/haar/build/haar/install.log --single-version-externally-managed install_data
+[1.543s] running egg_info
+[1.544s] creating build/haar/haar.egg-info
+[1.571s] writing build/haar/haar.egg-info/PKG-INFO
+[1.571s] writing dependency_links to build/haar/haar.egg-info/dependency_links.txt
+[1.572s] writing entry points to build/haar/haar.egg-info/entry_points.txt
+[1.572s] writing requirements to build/haar/haar.egg-info/requires.txt
+[1.572s] writing top-level names to build/haar/haar.egg-info/top_level.txt
+[1.572s] writing manifest file 'build/haar/haar.egg-info/SOURCES.txt'
+[1.629s] reading manifest file 'build/haar/haar.egg-info/SOURCES.txt'
+[1.629s] writing manifest file 'build/haar/haar.egg-info/SOURCES.txt'
+[1.630s] running build
+[1.630s] running build_py
+[1.630s] creating /home/robotis/robotis_ws/src/haar/build/haar/build
+[1.630s] creating /home/robotis/robotis_ws/src/haar/build/haar/build/lib
+[1.630s] creating /home/robotis/robotis_ws/src/haar/build/haar/build/lib/haar
+[1.630s] copying haar/haar.py -> /home/robotis/robotis_ws/src/haar/build/haar/build/lib/haar
+[1.631s] copying haar/__init__.py -> /home/robotis/robotis_ws/src/haar/build/haar/build/lib/haar
+[1.631s] running install
+[1.639s] running install_lib
+[1.666s] creating /home/robotis/robotis_ws/src/haar/install/haar/lib/python3.12/site-packages/haar
+[1.667s] copying /home/robotis/robotis_ws/src/haar/build/haar/build/lib/haar/haar.py -> /home/robotis/robotis_ws/src/haar/install/haar/lib/python3.12/site-packages/haar
+[1.667s] copying /home/robotis/robotis_ws/src/haar/build/haar/build/lib/haar/__init__.py -> /home/robotis/robotis_ws/src/haar/install/haar/lib/python3.12/site-packages/haar
+[1.668s] byte-compiling /home/robotis/robotis_ws/src/haar/install/haar/lib/python3.12/site-packages/haar/haar.py to haar.cpython-312.pyc
+[1.669s] byte-compiling /home/robotis/robotis_ws/src/haar/install/haar/lib/python3.12/site-packages/haar/__init__.py to __init__.cpython-312.pyc
+[1.669s] running install_data
+[1.670s] creating /home/robotis/robotis_ws/src/haar/install/haar/share/ament_index
+[1.670s] creating /home/robotis/robotis_ws/src/haar/install/haar/share/ament_index/resource_index
+[1.670s] creating /home/robotis/robotis_ws/src/haar/install/haar/share/ament_index/resource_index/packages
+[1.670s] copying resource/haar -> /home/robotis/robotis_ws/src/haar/install/haar/share/ament_index/resource_index/packages
+[1.670s] copying package.xml -> /home/robotis/robotis_ws/src/haar/install/haar/share/haar
+[1.670s] creating /home/robotis/robotis_ws/src/haar/install/haar/share/haar/launch
+[1.671s] copying launch/haar.py -> /home/robotis/robotis_ws/src/haar/install/haar/share/haar/launch
+[1.671s] copying launch/usb_cam_launch.py -> /home/robotis/robotis_ws/src/haar/install/haar/share/haar/launch
+[1.671s] running install_egg_info
+[1.701s] Copying build/haar/haar.egg-info to /home/robotis/robotis_ws/src/haar/install/haar/lib/python3.12/site-packages/haar-0.0.0-py3.12.egg-info
+[1.702s] running install_scripts
+[1.896s] Installing haar script to /home/robotis/robotis_ws/src/haar/install/haar/lib/haar
+[1.896s] writing list of installed files to '/home/robotis/robotis_ws/src/haar/build/haar/install.log'
+[1.933s] Invoked command in '/home/robotis/robotis_ws/src/haar' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/robotis/robotis_ws/src/haar/build/haar/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/robotis/robotis_ws/src/haar/install/haar/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base build/haar build --build-base /home/robotis/robotis_ws/src/haar/build/haar/build install --record /home/robotis/robotis_ws/src/haar/build/haar/install.log --single-version-externally-managed install_data

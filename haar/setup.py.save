@@ -1,0 +1,9 @@
+from setuptools import find_packages, setup
+
+package_name = 'haar'
+
+setup(
+    name=package_name,
+    version='0.0.0',
+    packages=find_packages(exclude=['test']),
+    d

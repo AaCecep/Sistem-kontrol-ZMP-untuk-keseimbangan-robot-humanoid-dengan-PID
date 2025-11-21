@@ -1,0 +1,2 @@
+[console_scripts]
+haar = haar.haar:main
