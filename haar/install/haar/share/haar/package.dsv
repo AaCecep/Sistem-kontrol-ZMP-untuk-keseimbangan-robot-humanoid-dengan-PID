@@ -1,6 +1,0 @@
-source;share/haar/hook/pythonpath.ps1
-source;share/haar/hook/pythonpath.dsv
-source;share/haar/hook/pythonpath.sh
-source;share/haar/hook/ament_prefix_path.ps1
-source;share/haar/hook/ament_prefix_path.dsv
-source;share/haar/hook/ament_prefix_path.sh
