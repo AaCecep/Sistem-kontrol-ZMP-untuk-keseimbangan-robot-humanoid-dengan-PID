@@ -1,50 +1,36 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.signal import find_peaks
 import numpy as np
 
-# === Pilih 1 file yang ingin dianalisis ===
-label = "PID Controller"
-filename = "zmp.csv"
+# === Baca file CSV ===
+data = pd.read_csv("zmp.csv")  # ganti dengan nama file kamu
+time = data["time (s)"]
+zmp_x = data["zmp_x"]
 
-setpoint = 2.5   # setpoint ZMP-X
+# === Cari puncak (peak) pada sinyal ZMP-X ===
+peaks, _ = find_peaks(zmp_x, prominence=0.05)  # prominence = sensitivitas
+valleys, _ = find_peaks(-zmp_x, prominence=0.05)
 
-try:
-    data = pd.read_csv(filename)
+# === Hitung periode osilasi (selisih waktu antar puncak) ===
+if len(peaks) > 1:
+    Pu_list = np.diff(time.iloc[peaks])
+    Pu_mean = np.mean(Pu_list)
+    print(f"Jumlah osilasi terdeteksi: {len(peaks)}")
+    print(f"Pu rata-rata: {Pu_mean:.3f} detik")
+else:
+    print("⚠️ Tidak cukup puncak terdeteksi untuk menghitung Pu")
 
-    # Hitung error
-    error = setpoint - data['zmp_x']
+# === Plot grafik dan tandai puncak ===
+plt.figure(figsize=(10, 5))
+plt.plot(time, zmp_x, label="ZMP-X", color='blue')
+plt.plot(time.iloc[peaks], zmp_x.iloc[peaks], "ro", label="Puncak (Peak)")
+plt.plot(time.iloc[valleys], zmp_x.iloc[valleys], "go", label="Lembah (Valley)")
 
-    # Hitung statistik error
-    mae  = np.mean(np.abs(error))       
-    rmse = np.sqrt(np.mean(error**2))  
-
-    # Hitung nilai max dan min
-    zmax = data['zmp_x'].max()
-    zmin = data['zmp_x'].min()
-    amplitude = zmax - zmin
-
-    # Cetak hasil ke terminal
-    print(f"=== {label} ===")
-    print(f"  Max ZMP-X : {zmax:.4f}")
-    print(f"  Min ZMP-X : {zmin:.4f}")
-    print(f"  Amplitudo : {amplitude:.4f}")
-    print(f"  MAE       : {mae:.4f}")
-    print(f"  RMSE      : {rmse:.4f}\n")
-
-    # === Plot grafik ===
-    plt.figure(figsize=(10, 5))
-    plt.plot(data['time (s)'], data['zmp_x'], linewidth=2)
-
-    plt.title(label)
-    plt.xlabel("Waktu (s)")
-    plt.ylabel("ZMP-X")
-    plt.grid(True)
-
-    # Batas sumbu y
-    plt.ylim(-1, 5)
-
-    plt.tight_layout()
-    plt.show()
-
-except Exception as e:
-    print(f"Error saat membaca file {filename}: {e}")
+plt.title("Osilasi nilai ZMP_X")
+plt.xlabel("Waktu (s)")
+plt.ylabel("ZMP-X")
+plt.legend()
+plt.grid(True)
+plt.ylim(-5, 12)
+plt.show()
