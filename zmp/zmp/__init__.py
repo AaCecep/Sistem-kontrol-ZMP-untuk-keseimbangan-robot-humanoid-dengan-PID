@@ -170,6 +170,7 @@ class DynamicComCalculator(Node):
         perimeter = np.sum(np.sqrt(np.sum(np.diff(points, axis=0)**2, axis=1)))
 
         return {"phase": current_phase, "area": area, "perimeter": perimeter}
+    
 
     def timer_callback(self):
         com_data = self.calculate_dynamic_com()
