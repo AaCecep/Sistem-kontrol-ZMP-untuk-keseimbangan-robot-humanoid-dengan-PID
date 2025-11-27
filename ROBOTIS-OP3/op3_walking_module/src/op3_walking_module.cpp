@@ -231,7 +231,7 @@ void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
 
   double zmp_x_int = msg->zmp_x;
 
-  double zmp_x_setpoint = 2.5;  
+  double zmp_x_setpoint = 0;  
   double zmp_x_error =  zmp_x_int - zmp_x_setpoint;
 
   // P
