@@ -125,8 +125,8 @@ class SimpleGameControllerNode(Node):
         super().__init__('simple_robocup_game_controller')
 
         # Parameters
-        self.declare_parameter('team_number', 7)
-        self.declare_parameter('player_number', 1)
+        self.declare_parameter('team_number', 2)
+        self.declare_parameter('player_number', 2)
         self.declare_parameter('gamecontroller_ip', '255.255.255.255')
         self.declare_parameter('listen_port', GAMECONTROLLER_PORT)
         self.declare_parameter('send_alive_interval', 2.0)

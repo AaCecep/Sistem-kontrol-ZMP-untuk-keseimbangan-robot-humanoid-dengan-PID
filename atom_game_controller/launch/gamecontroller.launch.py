@@ -7,12 +7,12 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'team_number',
-            default_value='1',
+            default_value='7',
             description='Team number'
         ),
         DeclareLaunchArgument(
             'player_number', 
-            default_value='1',
+            default_value='2',
             description='Player number'
         ),
         DeclareLaunchArgument(

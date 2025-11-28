@@ -235,7 +235,7 @@ bool BallFollower::processFollowing(double x_angle, double y_angle, double ball_
   cam_msg.angle_x = ball_x_angle;
   cam_msg.angle_y= ball_y_angle;
   camera_pub_->publish(cam_msg);
-  // RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "distance_to_ball : %f | ball_x_angle : %f", distance_to_ball, ball_x_angle);
+  RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "distance_to_ball : %f | ball_x_angle : %f", distance_to_ball, ball_x_angle);
   if ((distance_to_ball < distance_to_kick) && (fabs(ball_x_angle) > 25.0)){
     if(ball_x_angle >0){
       //jalan kiri
