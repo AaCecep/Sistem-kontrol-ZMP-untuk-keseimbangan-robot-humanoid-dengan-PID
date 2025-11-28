@@ -5,6 +5,8 @@ from typing import Optional
 
 import rclpy
 from rclpy.node import Node
+from std_msgs.msg import Int32  # <-- untuk publish state
+
 
 # Constants
 GAMECONTROLLER_PORT = 3838
@@ -57,7 +59,7 @@ SPL_COACH_MESSAGE_SIZE = 40
 STATE_NAMES = {
     STATE_INITIAL: "INITIAL",
     STATE_READY: "READY",
-    STATE_SET: "SET", 
+    STATE_SET: "SET",
     STATE_PLAYING: "PLAYING",
     STATE_FINISHED: "FINISHED"
 }
@@ -80,10 +82,12 @@ TEAM_COLOR_NAMES = {
     TEAM_RED: "RED"
 }
 
+
 class RobotInfo:
     def __init__(self):
         self.penalty = 0
         self.secs_till_unpenalised = 0
+
 
 class TeamInfo:
     def __init__(self):
@@ -95,6 +99,7 @@ class TeamInfo:
         self.coach_message = b''
         self.coach = RobotInfo()
         self.players = [RobotInfo() for _ in range(MAX_NUM_PLAYERS)]
+
 
 class GameControlData:
     def __init__(self):
@@ -114,53 +119,61 @@ class GameControlData:
 
 
 class SimpleGameControllerNode(Node):
-    """Simple ROS2 Node for RoboCup Game Controller communication - Print only"""
-    
+    """Simple ROS2 Node for RoboCup Game Controller communication"""
+
     def __init__(self):
         super().__init__('simple_robocup_game_controller')
-        
+
         # Parameters
-        self.declare_parameter('team_number', 1)
+        self.declare_parameter('team_number', 7)
         self.declare_parameter('player_number', 1)
         self.declare_parameter('gamecontroller_ip', '255.255.255.255')
         self.declare_parameter('listen_port', GAMECONTROLLER_PORT)
         self.declare_parameter('send_alive_interval', 2.0)
         self.declare_parameter('verbose', True)
-        
+
         self.team_number = self.get_parameter('team_number').value
         self.player_number = self.get_parameter('player_number').value
         self.gc_ip = self.get_parameter('gamecontroller_ip').value
         self.listen_port = self.get_parameter('listen_port').value
         self.alive_interval = self.get_parameter('send_alive_interval').value
         self.verbose = self.get_parameter('verbose').value
-        
+
+        # === Publisher untuk game state (Int32) ===
+        # 0: INITIAL, 1: READY, 2: SET, 3: PLAYING, 4: FINISHED
+        self.game_state_pub = self.create_publisher(
+            Int32,
+            'game_controller',  # topik yang akan disubscribe oleh C++
+            10
+        )
+
         # UDP socket for receiving game controller data
         self.receive_socket = None
         self.send_socket = None
         self.receiver_thread = None
         self.running = False
-        
+
         # Last game state for change detection
         self.last_state = None
         self.last_secs_remaining = None
         self.last_scores = [None, None]
-        
+
         # Timer for sending alive messages
         self.alive_timer = self.create_timer(
-            self.alive_interval, 
+            self.alive_interval,
             self.send_alive_message
         )
-        
-        self.get_logger().info('='*60)
+
+        self.get_logger().info('=' * 60)
         self.get_logger().info('🤖 RoboCup Game Controller Node Started')
         self.get_logger().info(f'📋 Team: {self.team_number}, Player: {self.player_number}')
         self.get_logger().info(f'🌐 GameController IP: {self.gc_ip}')
         self.get_logger().info(f'🔊 Listen Port: {self.listen_port}')
-        self.get_logger().info('='*60)
-        
+        self.get_logger().info('=' * 60)
+
         # Start UDP communication
         self.start_udp_communication()
-    
+
     def start_udp_communication(self):
         """Initialize UDP sockets and start receiving thread"""
         try:
@@ -169,45 +182,53 @@ class SimpleGameControllerNode(Node):
             self.receive_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.receive_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             self.receive_socket.bind(('', self.listen_port))
-            
+
             # Socket for sending return data
             self.send_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.send_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            
+
             # Start receiving thread
             self.running = True
             self.receiver_thread = threading.Thread(target=self.receive_game_data)
             self.receiver_thread.daemon = True
             self.receiver_thread.start()
-            
+
             self.get_logger().info(f'✅ UDP communication started on port {self.listen_port}')
-            
+
         except Exception as e:
             self.get_logger().error(f'❌ Failed to start UDP communication: {e}')
-    
+
     def receive_game_data(self):
         """Thread function to receive game controller data"""
         while self.running and rclpy.ok():
             try:
                 data, addr = self.receive_socket.recvfrom(1024)
 
-                self.get_logger().warn(f"Received {len(data)} bytes from {addr}, header={data[:4]}")
-                
+                # Hanya proses paket RGme (GameControlData)
+                if data[:4] != b'RGme':
+                    continue
+
                 # Parse the received data
                 game_data = self.parse_game_control_data(data)
                 if game_data:
                     self.display_game_data(game_data, addr)
-                    
+                else:
+                    # Debug kalau parsing gagal
+                    self.get_logger().debug(
+                        f"❔ RGme packet from {addr[0]} could not be parsed (len={len(data)})"
+                    )
+
             except socket.timeout:
                 continue
             except Exception as e:
                 if self.running:
                     self.get_logger().error(f'❌ Error receiving game data: {e}')
-    
+
     def parse_game_control_data(self, data: bytes) -> Optional[GameControlData]:
-        """Parse binary game control data"""
+        """Parse binary game control data (SPL GameController format)"""
         try:
-            if len(data) < 12:  # Minimum size check
+            # Minimal size: header(4) + game info(14)
+            if len(data) < 18:
                 return None
 
             # Check header
@@ -217,18 +238,41 @@ class SimpleGameControllerNode(Node):
 
             # --- Parse basic game info ---
             offset = 4  # mulai setelah header
-            fmt = 'BBBBBBBBBHHH'
+
+            # Format SPL:
+            # uint8 version;
+            # uint8 packetNumber;
+            # uint8 playersPerTeam;
+            # uint8 state;
+            # uint8 firstHalf;
+            # uint8 kickOffTeam;
+            # uint8 secondaryState;
+            # uint8 dropInTeam;
+            # uint16 dropInTime;
+            # int16 secsRemaining;
+            # int16 secondaryTime;
+            fmt = '<BBBBBBBBHhh'
             expected_size = struct.calcsize(fmt)
 
             if len(data) < offset + expected_size:
-                self.get_logger().warn(f"⚠️ Packet too small for game info, got {len(data)} bytes")
+                self.get_logger().warn(
+                    f"⚠️ Packet too small for game info, got {len(data)} bytes"
+                )
                 return None
 
-            (version, packet_number, players_per_team, state, first_half,
-            kick_off_team, secondary_state, drop_in_team, drop_in_time,
-            secs_remaining, secondary_time, _) = struct.unpack_from(fmt, data, offset)
+            (version,
+             packet_number,
+             players_per_team,
+             state,
+             first_half,
+             kick_off_team,
+             secondary_state,
+             drop_in_team,
+             drop_in_time,
+             secs_remaining,
+             secondary_time) = struct.unpack_from(fmt, data, offset)
 
-            offset += expected_size  # pastikan offset bergeser sesuai ukuran struct
+            offset += expected_size
 
             # Buat game_data object
             game_data = GameControlData()
@@ -264,11 +308,22 @@ class SimpleGameControllerNode(Node):
         try:
             start_offset = offset
 
-            # Basic team info (6 bytes)
+            # Basic team info (6 bytes):
+            # uint8 teamNumber;
+            # uint8 teamColour;
+            # uint8 score;
+            # uint8 penaltyShot;
+            # uint16 singleShots;
             if len(data) < offset + 6:
                 return None, start_offset
-            (team_number, team_colour, score, penalty_shot,
-            single_shots_low, single_shots_high) = struct.unpack_from('BBBBBB', data, offset)
+
+            (team_number,
+             team_colour,
+             score,
+             penalty_shot,
+             single_shots_low,
+             single_shots_high) = struct.unpack_from('BBBBBB', data, offset)
+
             single_shots = single_shots_low | (single_shots_high << 8)
             offset += 6
 
@@ -304,126 +359,145 @@ class SimpleGameControllerNode(Node):
             self.get_logger().error(f'❌ Error parsing team info: {e}')
             return None, offset
 
-
     def parse_robot_info(self, data: bytes, offset: int) -> RobotInfo:
         """Parse robot information from binary data"""
         penalty, secs_till_unpenalised = struct.unpack_from('BB', data, offset)
-        
+
         robot_info = RobotInfo()
         robot_info.penalty = penalty
         robot_info.secs_till_unpenalised = secs_till_unpenalised
-        
+
         return robot_info
-    
+
     def display_game_data(self, game_data: GameControlData, addr):
         """Display game data in a formatted way"""
         state_changed = self.last_state != game_data.state
         time_changed = self.last_secs_remaining != game_data.secs_remaining
-        score_changed = (self.last_scores[0] != game_data.teams[0].score or 
-                        self.last_scores[1] != game_data.teams[1].score)
-        
+        score_changed = (self.last_scores[0] != game_data.teams[0].score or
+                         self.last_scores[1] != game_data.teams[1].score)
+
+        state_name = STATE_NAMES.get(game_data.state, f"UNKNOWN({game_data.state})")
+        # self.get_logger().info(f"📢 STATE SAAT INI: {state_name}")
+
+        # === Publish game state (0..4) ke topik /game_controller ===
+        # kalau mau publish tiap paket:
+        msg = Int32()
+        msg.data = int(game_data.state)
+        self.game_state_pub.publish(msg)
+
+        # Kalau mau publish hanya saat berubah, bisa ganti:
+        # if state_changed:
+        #     msg = Int32()
+        #     msg.data = int(game_data.state)
+        #     self.game_state_pub.publish(msg)
+
         # Always show important changes
         if state_changed or score_changed:
-            self.get_logger().info('='*80)
+            self.get_logger().info('=' * 80)
             self.print_game_status(game_data, addr)
             self.print_team_info(game_data)
             self.check_penalties(game_data)
-            self.get_logger().info('='*80)
+            self.get_logger().info('=' * 80)
         # Show time updates if verbose or every 10 seconds
         elif time_changed and (self.verbose or game_data.secs_remaining % 10 == 0):
             self.print_game_status(game_data, addr)
-        
+
         # Update last state
         self.last_state = game_data.state
         self.last_secs_remaining = game_data.secs_remaining
         self.last_scores = [game_data.teams[0].score, game_data.teams[1].score]
-    
+
     def print_game_status(self, game_data: GameControlData, addr):
         """Print current game status"""
         state_name = STATE_NAMES.get(game_data.state, f"UNKNOWN({game_data.state})")
         half_name = "1st Half" if game_data.first_half else "2nd Half"
-        
+
         # Format time
         mins = game_data.secs_remaining // 60
         secs = game_data.secs_remaining % 60
         time_str = f"{mins:02d}:{secs:02d}"
-        
+
         # Kick off team
-        kickoff_team = TEAM_COLOR_NAMES.get(game_data.kick_off_team, f"TEAM_{game_data.kick_off_team}")
-        
-        self.get_logger().info(
-            f'🎮 GAME STATUS | {state_name} | {half_name} | '
-            f'Time: {time_str} | Kickoff: {kickoff_team} | '
-            f'From: {addr[0]}'
-        )
-    
+        kickoff_team = TEAM_COLOR_NAMES.get(game_data.kick_off_team,
+                                            f"TEAM_{game_data.kick_off_team}")
+
+        # self.get_logger().info(
+        #     f'🎮 GAME STATUS | {state_name} | {half_name} | '
+        #     f'Time: {time_str} | Kickoff: {kickoff_team} | '
+        #     f'From: {addr[0]}'
+        # )
+
     def print_team_info(self, game_data: GameControlData):
         """Print team information"""
         for i, team in enumerate(game_data.teams):
             color_name = TEAM_COLOR_NAMES.get(team.team_colour, f"COLOR_{team.team_colour}")
-            
+
             self.get_logger().info(
                 f'🏆 Team {team.team_number} ({color_name}) | '
                 f'Score: {team.score} | '
                 f'Penalty Shots: {team.penalty_shot}'
             )
-    
+
     def check_penalties(self, game_data: GameControlData):
         """Check and display player penalties"""
         for team_idx, team in enumerate(game_data.teams):
             # Check coach penalty
             if team.coach.penalty != PENALTY_NONE:
-                penalty_name = PENALTY_NAMES.get(team.coach.penalty, f"PENALTY_{team.coach.penalty}")
+                penalty_name = PENALTY_NAMES.get(team.coach.penalty,
+                                                 f"PENALTY_{team.coach.penalty}")
                 self.get_logger().warn(
                     f'⚠️  Team {team.team_number} COACH: {penalty_name} '
                     f'({team.coach.secs_till_unpenalised}s remaining)'
                 )
-            
+
             # Check player penalties
             for player_idx, player in enumerate(team.players):
                 if player.penalty != PENALTY_NONE:
-                    penalty_name = PENALTY_NAMES.get(player.penalty, f"PENALTY_{player.penalty}")
+                    penalty_name = PENALTY_NAMES.get(player.penalty,
+                                                     f"PENALTY_{player.penalty}")
                     self.get_logger().warn(
                         f'⚠️  Team {team.team_number} Player {player_idx + 1}: {penalty_name} '
                         f'({player.secs_till_unpenalised}s remaining)'
                     )
-    
+
     def send_alive_message(self):
         """Send alive message to game controller"""
         if self.send_socket:
             try:
                 # Create return data
                 header = GAMECONTROLLER_RETURN_STRUCT_HEADER.encode('ascii')[:4].ljust(4, b'\x00')
-                data = header + struct.pack('BBBB', 
-                                          GAMECONTROLLER_RETURN_STRUCT_VERSION,
-                                          self.team_number, 
-                                          self.player_number, 
-                                          GAMECONTROLLER_RETURN_MSG_ALIVE)
-                
+                data = header + struct.pack(
+                    'BBBB',
+                    GAMECONTROLLER_RETURN_STRUCT_VERSION,
+                    self.team_number,
+                    self.player_number,
+                    GAMECONTROLLER_RETURN_MSG_ALIVE
+                )
+
                 # Send to game controller
                 self.send_socket.sendto(data, (self.gc_ip, GAMECONTROLLER_PORT))
-                
+
                 if self.verbose:
                     self.get_logger().debug(f'💓 Sent alive message to {self.gc_ip}')
-                
+
             except Exception as e:
                 self.get_logger().error(f'❌ Error sending alive message: {e}')
-    
+
     def destroy_node(self):
         """Clean up resources"""
         self.get_logger().info('🛑 Shutting down GameController Node...')
-        
+
         self.running = False
-        
+
         if self.receiver_thread:
             self.receiver_thread.join(timeout=1.0)
-        
+
         if self.receive_socket:
             self.receive_socket.close()
-        
+
         if self.send_socket:
             self.send_socket.close()
-        
+
         self.get_logger().info('✅ GameController Node shut down complete')
         super().destroy_node()
 
@@ -431,18 +505,18 @@ class SimpleGameControllerNode(Node):
 def main(args=None):
     """Main entry point"""
     rclpy.init(args=args)
-    
+
     node = SimpleGameControllerNode()
-    
+
     try:
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("🤖 RoboCup Game Controller Monitor")
         print("📡 Listening for game controller data...")
         print("💡 Use Ctrl+C to stop")
-        print("="*80 + "\n")
-        
+        print("=" * 80 + "\n")
+
         rclpy.spin(node)
-        
+
     except KeyboardInterrupt:
         print("\n🛑 Received Ctrl+C, shutting down...")
     except Exception as e:

@@ -257,16 +257,16 @@ void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
     walking_param_.init_x_offset = -0.06;
   }
   
-  RCLCPP_INFO(rclcpp::get_logger("WalkingModule"),
-              "ZMP-X: %.3f | Error: %.3f | P: %.3f | I: %.3f | D: %.3f | PID Out: %.3f | Corr: %.3f | New X-Offset: %.3f",
-              zmp_x_int,
-              zmp_x_error,
-              proportional_term,
-              integral_term,
-              derivative_term,
-              pid_output,
-              offset_correction,
-              walking_param_.init_x_offset);
+  // RCLCPP_INFO(rclcpp::get_logger("WalkingModule"),
+  //             "ZMP-X: %.3f | Error: %.3f | P: %.3f | I: %.3f | D: %.3f | PID Out: %.3f | Corr: %.3f | New X-Offset: %.3f",
+  //             zmp_x_int,
+  //             zmp_x_error,
+  //             proportional_term,
+  //             integral_term,
+  //             derivative_term,
+  //             pid_output,
+  //             offset_correction,
+  //             walking_param_.init_x_offset);
   
   // if (kondisi == 0)
   // {                                                     

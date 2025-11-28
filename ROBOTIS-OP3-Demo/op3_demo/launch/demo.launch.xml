@@ -13,7 +13,7 @@
   <include file="$(find-pkg-share op3_web_setting_tool)/launch/web_setting_server.launch.xml" />
 
   <!-- game_controller -->
-  <!-- <include file="$(find-pkg-share game_controller)/launch/game_controller.py"/> -->
+  <include file="$(find-pkg-share atom_game_controller)/launch/gamecontroller.launch.py"/>
   
   <!-- robotis op3 demo -->
   <node pkg="op3_demo" exec="op_demo_node" output="screen">

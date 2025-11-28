@@ -227,7 +227,7 @@ bool BallFollower::processFollowing(double x_angle, double y_angle, double ball_
     distance_to_ball *= (-1);
 
   //double distance_to_kick = 0.25;
-  double distance_to_kick = 0.22;
+  double distance_to_kick = 0.14;
 
   //custom cecep
   my_msg::msg::Camera cam_msg;
@@ -235,27 +235,36 @@ bool BallFollower::processFollowing(double x_angle, double y_angle, double ball_
   cam_msg.angle_x = ball_x_angle;
   cam_msg.angle_y= ball_y_angle;
   camera_pub_->publish(cam_msg);
-  // RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "yaw : %f", current_yaw_);
+  // RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "distance_to_ball : %f | ball_x_angle : %f", distance_to_ball, ball_x_angle);
   if ((distance_to_ball < distance_to_kick) && (fabs(ball_x_angle) > 25.0)){
-    setWalkingParam(-0.01, 0, 0);
+    if(ball_x_angle >0){
+      //jalan kiri
+      setWalkingParam(-0.003, 0.004, 0);
+    } else{
+      //jalan kanan
+      setWalkingParam(-0.003, -0.003, 0);
+    }
   }
 
   // check whether ball is correct position.
   if ((distance_to_ball < distance_to_kick) && (fabs(ball_x_angle) < 25.0))
   {
-    if(!(current_yaw_ < 5 || current_yaw_ > 355)){
+    if(distance_to_ball < 0.25){
+      setWalkingParam(-0.005, 0, 0);
+    }
+    if(!(current_yaw_ < 13 || current_yaw_ > 347)){
       if(current_yaw_ < 180){
         // mutar kanan
-        setWalkingParam(-0.003, -0.015, 4.8 * M_PI / 180.0);
+        setWalkingParam(-0.003, -0.006, 2.0 * M_PI / 180.0);
         RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "mutar kanan");
       } else{
         // mutar kiri
-        setWalkingParam(-0.003, 0.019, -4.8 * M_PI / 180.0);
+        setWalkingParam(-0.004, 0.007, -2.0 * M_PI / 180.0);
         RCLCPP_INFO(rclcpp::get_logger("BallFollower"), "mutar kiri");
       }
     }else{
       count_to_kick_ += 1;
-      setWalkingParam(0, 0, 0);
+      setWalkingParam(-0.003, 0, 0);
 
       if (DEBUG_PRINT)
       {
@@ -273,7 +282,7 @@ bool BallFollower::processFollowing(double x_angle, double y_angle, double ball_
   //    ball_position_queue_.push_back((ball_x_angle > 0) ? 1 : -1);
 
 
-      if (count_to_kick_ > 20)
+      if (count_to_kick_ > 10)
       {
         setWalkingCommand("stop");
         on_tracking_ = false;
@@ -297,7 +306,7 @@ bool BallFollower::processFollowing(double x_angle, double y_angle, double ball_
 
         return true;
       }
-      else if (count_to_kick_ > 15)
+      else if (count_to_kick_ > 5)
       {
         //      if (ball_x_angle > 0)
         //        accum_ball_position_ += 1;
