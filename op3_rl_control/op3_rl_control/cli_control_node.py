@@ -15,9 +15,10 @@ class Op3RlControlNode(Node):
         # -----------------------------------------------------
         # MODE SELECTION
         # -----------------------------------------------------
+        self.valid_modes = ["sim", "real", "direct", "simultaneous"]
         self.mode = mode.lower()
-        if self.mode not in ["sim", "real", "direct"]:
-            raise ValueError("Mode must be: sim | real | direct")
+        if self.mode not in self.valid_modes:
+            raise ValueError("Mode must be: sim | real | direct | simultaneous")
 
         self.get_logger().info(f"🚀 Starting OP3 control node in MODE = {self.mode.upper()}")
 
@@ -35,43 +36,37 @@ class Op3RlControlNode(Node):
         )
 
         # -----------------------------------------------------
-        # SIM MODE (Webots)
+        # PUBLISHERS (always created; routing depends on mode)
         # -----------------------------------------------------
-        if self.mode == "sim":
-            self.joint_publishers = {}
-            for joint in self.joint_names:
-                topic = f"/robotis_op3/{joint}_position/command"
-                self.joint_publishers[joint] = \
-                    self.create_publisher(Float64, topic, 10)
-                self.get_logger().info(f"📢 (SIM) publisher: {topic}")
+        # SIM (Webots) publishers
+        self.joint_publishers = {}
+        for joint in self.joint_names:
+            topic = f"/robotis_op3/{joint}_position/command"
+            self.joint_publishers[joint] = \
+                self.create_publisher(Float64, topic, 10)
+            self.get_logger().info(f"📢 (SIM) publisher: {topic}")
 
-        # -----------------------------------------------------
-        # REAL MODE (High-level controller)
-        # -----------------------------------------------------
-        if self.mode == "real":
-            self.real_pub = self.create_publisher(
-                JointState, "/robotis/set_joint_states", 10
-            )
-            # CORRECTED: Torque and module control publishers
-            self.torque_enable_pub = self.create_publisher(
-                Bool, "/robotis/tuning_module/torque_enable", 10
-            )
-            self.enable_ctrl_module_pub = self.create_publisher(
-                String, "/robotis/enable_ctrl_module", 10
-            )
-            self.get_logger().info("📢 (REAL) publisher: /robotis/set_joint_states")
-            self.get_logger().info("📢 (REAL) publisher: /robotis/tuning_module/torque_enable")
-            self.get_logger().info("📢 (REAL) publisher: /robotis/enable_ctrl_module")
+        # REAL (high-level controller) publishers
+        self.real_pub = self.create_publisher(
+            JointState, "/robotis/set_joint_states", 10
+        )
+        # Torque and module / controller control publishers
+        self.torque_enable_pub = self.create_publisher(
+            Bool, "/robotis/tuning_module/torque_enable", 10
+        )
+        self.enable_ctrl_module_pub = self.create_publisher(
+            String, "/robotis/enable_ctrl_module", 10
+        )
+        self.get_logger().info("📢 (REAL) publisher: /robotis/set_joint_states")
+        self.get_logger().info("📢 (REAL) publisher: /robotis/tuning_module/torque_enable")
+        self.get_logger().info("📢 (REAL) publisher: /robotis/enable_ctrl_module")
 
-        # -----------------------------------------------------
-        # DIRECT MODE (DirectControlModule)
-        # -----------------------------------------------------
-        if self.mode == "direct":
-            self.direct_pub = self.create_publisher(
-                JointState, "/robotis/direct_control/set_joint_states", 10
-            )
-            self.get_logger().info("📢 (DIRECT) publisher: /robotis/direct_control/set_joint_states")
-
+        # DIRECT MODE (DirectControlModule) publisher
+        self.direct_pub = self.create_publisher(
+            JointState, "/robotis/direct_control/set_joint_states", 10
+        )
+        self.get_logger().info("📢 (DIRECT) publisher: /robotis/direct_control/set_joint_states")
+        
         # -----------------------------------------------------
         # CLI communication
         # -----------------------------------------------------
@@ -79,6 +74,9 @@ class Op3RlControlNode(Node):
             String, "/op3_rl_control/commands", self.command_callback, 10
         )
         self.status_pub = self.create_publisher(String, "/op3_rl_control/status", 10)
+        
+        # APPLY INITIAL MODE
+        self._switch_mode(self.mode)
 
         status = String()
         status.data = f"READY: Mode={self.mode.upper()} | Controlling {len(self.joint_names)} joints"
@@ -132,9 +130,14 @@ class Op3RlControlNode(Node):
         if command == "torque_off":
             self._enable_torque(False)
             return
-            
-        if command == "enable_direct_module":
-            self._enable_direct_control_module()
+
+        if command.startswith("switch_mode "):
+            parts = command.split()
+            if len(parts) != 2:
+                self.status_pub.publish(String(data="ERROR: Usage: switch_mode <sim|real|direct|simultaneous>"))
+                return
+            new_mode = parts[1].lower()
+            self._switch_mode(new_mode)
             return
 
         self.status_pub.publish(String(data="ERROR: Unknown command."))
@@ -143,8 +146,8 @@ class Op3RlControlNode(Node):
     # TORQUE AND MODULE CONTROL
     # =========================================================
     def _enable_torque(self, enable):
-        if self.mode != "real":
-            self.status_pub.publish(String(data=f"ERROR: torque control only available in REAL mode"))
+        if self.mode not in ["real", "direct", "simultaneous"]:
+            self.status_pub.publish(String(data=f"ERROR: torque control only available when controlling REAL robot (real|direct|simultaneous)"))
             return
             
         msg = Bool()
@@ -154,8 +157,8 @@ class Op3RlControlNode(Node):
         self.status_pub.publish(String(data=f"SUCCESS: Torque {state}"))
 
     def _enable_direct_control_module(self):
-        if self.mode != "real":
-            self.status_pub.publish(String(data=f"ERROR: module control only available in REAL mode"))
+        if self.mode not in ["real", "simultaneous"]:
+            self.status_pub.publish(String(data=f"ERROR: module control only available in REAL or SIMULTANEOUS mode"))
             return
             
         msg = String()
@@ -163,22 +166,50 @@ class Op3RlControlNode(Node):
         self.enable_ctrl_module_pub.publish(msg)
         self.status_pub.publish(String(data="SUCCESS: Direct Control Module enabled"))
 
+    def _switch_mode(self, new_mode):
+        """Switch internal control mode and adjust controller modules when applicable."""
+        if new_mode not in self.valid_modes:
+            self.status_pub.publish(
+                String(data=f"ERROR: invalid mode '{new_mode}'. Valid: sim | real | direct | simultaneous")
+            )
+            return
+
+        self.mode = new_mode
+
+        # Try to adjust controller modules on the real robot side
+        # - direct: enable DirectControlModule
+        # - real / simultaneous: disable motion modules (set to 'none') for direct joint control
+        # - sim: no real robot control required
+        if self.mode == "direct":
+            msg = String()
+            msg.data = "direct_control_module"
+            self.enable_ctrl_module_pub.publish(msg)
+            self.status_pub.publish(String(data="SUCCESS: Switched to DIRECT mode (direct_control_module enabled)"))
+        elif self.mode in ["real", "simultaneous"]:
+            msg = String()
+            msg.data = "none"
+            self.enable_ctrl_module_pub.publish(msg)
+            self.status_pub.publish(String(data=f"SUCCESS: Switched to {self.mode.upper()} mode (motion modules disabled)"))
+        else:  # sim
+            self.status_pub.publish(String(data="SUCCESS: Switched to SIM mode (simulation only)"))
+
     # =========================================================
     # SENDING JOINT COMMANDS (SIM / REAL / DIRECT)
     # =========================================================
     def _send_joint_cmd(self, joint, angle):
-        if self.mode == "sim":
+        # In SIMULTANEOUS mode, send to both SIM and REAL topics.
+        if self.mode in ["sim", "simultaneous"]:
             msg = Float64()
             msg.data = angle
             self.joint_publishers[joint].publish(msg)
 
-        elif self.mode == "real":
+        if self.mode in ["real", "simultaneous"]:
             msg = JointState()
             msg.name = [joint]
             msg.position = [angle]
             self.real_pub.publish(msg)
 
-        elif self.mode == "direct":
+        if self.mode == "direct":
             msg = JointState()
             msg.name = [joint]
             msg.position = [angle]

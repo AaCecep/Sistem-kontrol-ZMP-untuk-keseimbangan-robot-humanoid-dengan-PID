@@ -131,10 +131,43 @@ class Op3CLIInterface:
             self._send_command('list')
         elif command.lower().startswith('set '):
             self._send_command(command)
-        elif command.lower() in ['torque_on', 'torque_off', 'enable_direct_module']:
+        elif command.lower() in ['torque_on', 'torque_off']:
             self._send_command(command)
+        elif command.lower().startswith('switch_mode '):
+            self._send_command(command)
+        elif command.lower() == 'all_to_zero':
+            self._execute_all_to_zero()
         else:
             print("❌ Unknown command. Type 'help' for available commands.")
+
+    def _execute_all_to_zero(self):
+        """set all joints to 0 rad with 0.33 interval"""
+        self._send_command('set head_pan 0.0')
+        self._send_command('set head_tilt 0.0')
+        time.sleep(0.33)
+        
+        self._send_command('set l_sho_pitch 0.0')
+        self._send_command('set r_sho_pitch 0.0')
+        self._send_command('set l_sho_roll 0.0')
+        self._send_command('set r_sho_roll 0.0')
+        time.sleep(0.33)
+        
+        self._send_command('set l_el 0.0')
+        self._send_command('set r_el 0.0')
+        self._send_command('set l_knee 0.0')
+        self._send_command('set r_knee 0.0')
+        time.sleep(0.33)
+        
+        self._send_command('set l_hip_pitch 0.0')
+        self._send_command('set r_hip_pitch 0.0')
+        self._send_command('set l_hip_roll 0.0')
+        self._send_command('set r_hip_roll 0.0')
+        time.sleep(0.33)
+        
+        self._send_command('set l_ank_pitch 0.0')
+        self._send_command('set r_ank_pitch 0.0')
+        self._send_command('set l_ank_roll 0.0')
+        self._send_command('set r_ank_roll 0.0')
 
     def _show_help(self):
         """Show help message"""
@@ -143,9 +176,9 @@ class Op3CLIInterface:
         print("  set <joint> <angle>     - Set joint position (radians)")
         print("                           - <joint> can be index (0,1,2...) or name")
         print("                           - <joint> can be partial name (e.g., 'head' for head_pan)")
-        print("  torque_on               - Enable torque (REAL mode only)")
-        print("  torque_off              - Disable torque (REAL mode only)")
-        print("  enable_direct_module    - Enable direct control module (REAL mode only)")
+        print("  torque_on               - Enable torque (real robot modes only)")
+        print("  torque_off              - Disable torque (real robot modes only)")
+        print("  switch_mode <mode>      - Switch mode: sim | real | direct | simultaneous")
         print("  help, ?                 - Show this help message")
         print("  quit, exit, q           - Exit the program")
         print("\nExamples:")
@@ -154,7 +187,10 @@ class Op3CLIInterface:
         print("  set head 0.5            - Set all head joints (head_pan, head_tilt) to 0.5")
         print("  set l_ank 0.0           - Set all left ankle joints to 0.0")
         print("  torque_on               - Enable torque for real robot")
-        print("  enable_direct_module    - Enable direct control module")
+        print("  switch_mode real        - Switch to REAL mode (real robot only)")
+        print("  switch_mode sim         - Switch to SIM mode (simulation only)")
+        print("  switch_mode direct      - Switch to DIRECT mode (direct_control_module)")
+        print("  switch_mode simultaneous- Control SIM and REAL at the same time")
         print()
 
 def main():

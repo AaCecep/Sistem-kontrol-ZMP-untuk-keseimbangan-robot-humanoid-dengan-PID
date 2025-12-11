@@ -202,7 +202,7 @@ class DynamicComCalculator(Node):
         msg = Data()
         msg.zmp_x_lama = ZMP_x
         msg.zmp_y_lama = ZMP_y
-        msg.zmp_x = ZMP_x_filtered - 1.5
+        msg.zmp_x = ZMP_x_filtered 
         msg.zmp_y = ZMP_y_filtered
         msg.com_x = CoM_x
         msg.com_y = CoM_y
