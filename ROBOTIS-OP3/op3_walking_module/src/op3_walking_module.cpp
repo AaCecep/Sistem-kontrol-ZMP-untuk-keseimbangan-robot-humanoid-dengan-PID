@@ -248,7 +248,7 @@ void WalkingModule::zmpCallback(const my_msg::msg::Data::SharedPtr msg)
   double pid_output = proportional_term + integral_term + derivative_term;
   double scale_factor = 0.01; 
   double offset_correction = pid_output * scale_factor;
-
+  x_offset_temp  = 0.3 * tan(offset_correction);
   
   walking_param_.init_x_offset = x_offset_temp - 0.018;
   if (walking_param_.init_x_offset > 0.03) {
