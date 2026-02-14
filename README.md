@@ -1,5 +1,5 @@
-# 🦿 ZMP-Based PID Control for Humanoid Robot Balance  
-### (ROBOTIS OP3 – Bachelor Thesis Project)
+# 🦿 ZERO MOMENT POINT (ZMP) CONTROL SYSTEM FOR HUMANOID ROBOT BALANCE WITH PROPORTIONAL INTEGRAL DERIVATIVE (PID)  
+### ROBOTIS OP3
 ![image_alt](https://github.com/AaCecep/Sistem-kontrol-ZMP-untuk-keseimbangan-robot-humanoid-dengan-PID/blob/b9e12c89ccac61a0afcc4de799b1210ae31ce51d/Screenshot%202026-02-14%20074559.png?raw=true)
 ---
 
