@@ -50,7 +50,7 @@ This research was conducted as a Bachelor Thesis in Computer Engineering, Facult
 ---
 
 ## 🧠 Control Strategy
-![image_alt](https://github.com/AaCecep/Sistem-kontrol-ZMP-untuk-keseimbangan-robot-humanoid-dengan-PID/blob/b9e12c89ccac61a0afcc4de799b1210ae31ce51d/Screenshot%202026-02-14%20074559.png?raw=true)
+![image_alt](https://github.com/AaCecep/Sistem-kontrol-ZMP-untuk-keseimbangan-robot-humanoid-dengan-PID/blob/8ff98ad9f05215df12b0d81460dcabc6f074a1a1/Screenshot%202026-02-14%20074624.png?raw=true)
 ### 🔹 PID-Based ZMP Control Architecture
 
 The block diagram above illustrates the closed-loop control system used to maintain humanoid robot stability based on Zero Moment Point (ZMP).
@@ -123,3 +123,7 @@ This forms a **closed-loop feedback control system**, continuously correcting po
 The architecture forms a real-time closed-loop stabilization system:
 
 
+## 🎥 Demo Videos
+
+📁 **Full Demo Folder:**  
+https://drive.google.com/drive/folders/1HNzw77H0mEAN7rJq44KuiGXcWjupy2Me
