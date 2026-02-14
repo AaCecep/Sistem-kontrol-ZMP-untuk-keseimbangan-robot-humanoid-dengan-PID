@@ -1,6 +1,6 @@
 # 🦿 ZMP-Based PID Control for Humanoid Robot Balance  
 ### (ROBOTIS OP3 – Bachelor Thesis Project)
-
+![image_alt](https://github.com/AaCecep/Sistem-kontrol-ZMP-untuk-keseimbangan-robot-humanoid-dengan-PID/blob/96d9186de627417ce31a07605a980e8b74845b86/Diagram%20Blok%20Sistem%20Kontrol%20Keseimbangan%20PID.drawio.png?raw=true)
 ---
 
 ## 📌 Overview
