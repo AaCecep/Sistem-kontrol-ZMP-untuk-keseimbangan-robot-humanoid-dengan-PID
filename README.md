@@ -1,6 +1,6 @@
 # 🦿 ZMP-Based PID Control for Humanoid Robot Balance  
 ### (ROBOTIS OP3 – Bachelor Thesis Project)
-![image_alt](https://github.com/AaCecep/Sistem-kontrol-ZMP-untuk-keseimbangan-robot-humanoid-dengan-PID/blob/96d9186de627417ce31a07605a980e8b74845b86/Diagram%20Blok%20Sistem%20Kontrol%20Keseimbangan%20PID.drawio.png?raw=true)
+![image_alt](https://github.com/AaCecep/Sistem-kontrol-ZMP-untuk-keseimbangan-robot-humanoid-dengan-PID/blob/b9e12c89ccac61a0afcc4de799b1210ae31ce51d/Screenshot%202026-02-14%20074559.png?raw=true)
 ---
 
 ## 📌 Overview
@@ -34,7 +34,7 @@ This research was conducted as a Bachelor Thesis in Computer Engineering, Facult
 3. Low Pass Filtering  
 4. Error Computation (ZMP_actual – ZMP_setpoint)  
 5. PID Control  
-6. Gait Parameter Adjustment (`init_x_offset`)  
+6. Gait Parameter Adjustment
 7. Inverse Kinematics  
 8. Walking Execution  
 
@@ -50,10 +50,76 @@ This research was conducted as a Bachelor Thesis in Computer Engineering, Facult
 ---
 
 ## 🧠 Control Strategy
+![image_alt](https://github.com/AaCecep/Sistem-kontrol-ZMP-untuk-keseimbangan-robot-humanoid-dengan-PID/blob/b9e12c89ccac61a0afcc4de799b1210ae31ce51d/Screenshot%202026-02-14%20074559.png?raw=true)
+### 🔹 PID-Based ZMP Control Architecture
 
-### 🔹 Zero Moment Point (ZMP)
-Robot stability is achieved when the ZMP remains inside the Support Polygon area.
+The block diagram above illustrates the closed-loop control system used to maintain humanoid robot stability based on Zero Moment Point (ZMP).
 
-### 🔹 PID Controller
-The PID controller corrects walking posture based on ZMP error:
+#### 1️⃣ Set Point
+The desired stability condition is defined as:
+ZMP_x = 0
+
+
+This represents the ideal ZMP position at the center of the support polygon to maintain balance.
+
+---
+
+#### 2️⃣ Error Computation
+
+The system computes the control error as:
+
+e(t) = ZMP_actual - ZMP_setpoint
+
+
+This error represents the deviation of the robot's dynamic stability from the desired condition.
+
+---
+
+#### 3️⃣ PID Controller
+
+The error is processed by a PID controller consisting of:
+
+- **Proportional (Kp·e(t))** → Reacts to present error  
+- **Integral (Ki∫e(t)dt)** → Eliminates steady-state error  
+- **Derivative (Kd·de(t)/dt)** → Predicts future error trend  
+
+The total controller output is:
+
+u(t) = Kp·e(t) + Ki∫e(t)dt + Kd·de(t)/dt
+
+
+This output generates an `x_offset` correction signal.
+
+---
+
+#### 4️⃣ Walking Gait Adjustment
+
+The `x_offset` modifies the walking gait parameter (`init_x_offset`), shifting the robot's center of mass to counteract instability.
+
+---
+
+#### 5️⃣ Inverse Kinematics
+
+The adjusted gait parameters are passed to the inverse kinematics module, which computes the required joint angles:
+
+θ_ankle_pitch
+
+These joint commands are then sent to the actuators.
+
+---
+
+#### 6️⃣ Feedback Loop
+
+The robot's actual ZMP is measured using IMU and joint state data.
+
+To reduce sensor noise, the signal is processed through a **Low Pass Filter** before being fed back into the controller.
+
+This forms a **closed-loop feedback control system**, continuously correcting posture in real-time.
+
+---
+
+### 🔁 Control System Summary
+
+The architecture forms a real-time closed-loop stabilization system:
+
 
